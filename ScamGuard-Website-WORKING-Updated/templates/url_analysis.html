@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}URL Analysis - ScamGuard{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+
+    <p class="small-title">SCAMGUARD FEATURE</p>
+
+    <h1>URL Analysis</h1>
+
+    <p>
+        Check website URLs for suspicious indicators
+        and potentially dangerous links.
+    </p>
+
+</section>
+
+
+<section class="feature-detail">
+
+    <div class="feature-detail-card">
+
+        <div class="feature-icon">🔗</div>
+
+        <h2>URL Analysis</h2>
+
+        <p>
+            ScamGuard analyzes website URLs and identifies
+            patterns that may indicate suspicious or
+            potentially malicious websites.
+        </p>
+
+
+        <h3>What We Check</h3>
+
+        <ul>
+
+            <li>Suspicious keywords in URLs</li>
+
+            <li>IP address based URLs</li>
+
+            <li>HTTP instead of HTTPS</li>
+
+            <li>Unusually long URLs</li>
+
+            <li>Multiple subdomains</li>
+
+            <li>URL shortening services</li>
+
+            <li>Unusual URL patterns</li>
+
+        </ul>
+
+
+        <!-- IMPORTANT:
+             Go directly to URL scanner.
+             Do NOT use /scan?type=url
+        -->
+
+        <a
+            href="{{ url_for('url_scan') }}"
+            class="btn"
+        >
+            🔗 Start URL Scan →
+        </a>
+
+
+        <br>
+        <br>
+
+
+        <a
+            href="{{ url_for('features') }}"
+            class="btn"
+        >
+            ← Back to Features
+        </a>
+
+    </div>
+
+</section>
+
+{% endblock %}

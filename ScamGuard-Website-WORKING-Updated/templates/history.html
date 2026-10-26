@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Scan History - ScamGuard{% endblock %}
+{% block content %}
+<section class="page-hero">
+    <p class="small-title">SCAN HISTORY</p>
+    <h1>Previous Scam Checks</h1>
+    <p>Your recent message and URL analysis results are stored in the local database.</p>
+</section>
+<section class="history-section">
+    <div class="history-card">
+        {% if scans %}
+        <div class="history-table-wrap">
+        <table class="history-table">
+            <thead><tr><th>Content</th><th>Result</th><th>Risk</th><th>Indicators</th><th>Time</th></tr></thead>
+            <tbody>
+            {% for scan in scans %}
+            <tr>
+                <td class="history-message">{{ scan.message }}</td>
+                <td><span class="history-badge">{{ scan.result }}</span></td>
+                <td>{{ scan.risk_score }}/100<br><small>{{ scan.risk_level }}</small></td>
+                <td>{{ scan.detected_indicators }}</td>
+                <td>{{ scan.scanned_at }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="empty-history"><div class="empty-icon">🛡️</div><h3>No scans yet</h3><p>Go to Scan and analyze a message or URL.</p><a class="primary-button" href="{{ url_for('scan') }}">Start Scanning</a></div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}URL Scanner - ScamGuard{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+
+    <p class="small-title">URL SCANNER</p>
+
+    <h1>Scan Website URL</h1>
+
+    <p>
+        Enter a website URL to check for suspicious indicators.
+    </p>
+
+</section>
+
+<section class="scanner-section">
+
+    <div class="scanner-box">
+
+        <label for="urlInput">
+            🔗 Website URL
+        </label>
+
+        <input
+            type="url"
+            id="urlInput"
+            class="text-input"
+            placeholder="https://example.com"
+        >
+
+        <button
+            type="button"
+            class="scan-button"
+            onclick="analyzeURL()"
+        >
+            🔗 Analyze URL
+        </button>
+
+        <div
+            id="urlResult"
+            class="result-box"
+            style="display:none;"
+        ></div>
+
+    </div>
+
+</section>
+
+<script>
+
+function analyzeURL() {
+
+    const url = document
+        .getElementById("urlInput")
+        .value
+        .trim();
+
+    const resultBox = document
+        .getElementById("urlResult");
+
+    if (!url) {
+
+        resultBox.innerHTML = `
+            <div class="error-message">
+                ⚠️ Please enter a website URL.
+            </div>
+        `;
+
+        resultBox.style.display = "block";
+
+        return;
+    }
+
+    resultBox.innerHTML = `
+        <div class="loading-message">
+            🔍 Analyzing URL...
+        </div>
+    `;
+
+    resultBox.style.display = "block";
+
+    fetch("/api/check-url", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            url: url
+        })
+
+    })
+
+    .then(response => response.json())
+
+    .then(data => {
+
+        if (!data.success) {
+
+            resultBox.innerHTML = `
+                <div class="error-message">
+                    ⚠️ ${data.error}
+                </div>
+            `;
+
+            return;
+        }
+
+        const result = data.data;
+
+        resultBox.innerHTML = `
+
+            <div class="scan-result">
+
+                <h3>🔗 URL Analysis Result</h3>
+
+                <p>
+                    <strong>URL:</strong>
+                    ${url}
+                </p>
+
+                <p>
+                    <strong>Result:</strong>
+                    ${result.result}
+                </p>
+
+                <p>
+                    <strong>Risk Level:</strong>
+                    ${result.risk_level}
+                </p>
+
+                <p>
+                    <strong>Risk Score:</strong>
+                    ${result.risk_score}/100
+                </p>
+
+                <p>
+                    <strong>Detection Algorithm:</strong>
+                    ${result.ml_algorithm || "Random Forest"}
+                </p>
+
+                <p>
+                    <strong>Recommendation:</strong>
+                    ${result.recommendation}
+                </p>
+
+            </div>
+
+        `;
+
+        resultBox.style.display = "block";
+
+    })
+
+    .catch(error => {
+
+        console.error(error);
+
+        resultBox.innerHTML = `
+            <div class="error-message">
+                ❌ Unable to analyze URL.
+            </div>
+        `;
+
+        resultBox.style.display = "block";
+
+    });
+
+}
+
+</script>
+
+{% endblock %}

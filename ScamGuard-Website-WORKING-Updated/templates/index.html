@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}
+ScamGuard - Digital Scam Detection
+{% endblock %}
+
+{% block content %}
+
+<section class="hero home-only">
+
+    <div class="hero-content">
+
+        <p class="small-title">
+            AI-POWERED DIGITAL SAFETY
+        </p>
+
+        <h1>
+            Detect Scams
+            <span>Before They Harm You.</span>
+        </h1>
+
+        <p class="hero-text">
+            ScamGuard helps users identify suspicious messages,
+            emails and URLs using intelligent scam detection
+            techniques.
+        </p>
+
+        <div class="hero-buttons">
+
+            <a href="{{ url_for('how') }}"
+               class="secondary-button">
+                Learn More
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <div class="security-card">
+
+        <div class="shield">
+            🛡️
+        </div>
+
+        <h2>
+            Your Digital Safety
+        </h2>
+
+        <p>
+            Identify suspicious digital content
+            before taking risky actions.
+        </p>
+
+        <div class="status">
+
+            <span></span>
+
+            Protection Active
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Features - ScamGuard{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+
+    <p class="small-title">SCAMGUARD FEATURES</p>
+
+    <h1>Digital Scam Detection Features</h1>
+
+    <p>
+        Analyze messages and URLs using transparent
+        scam indicators and risk scoring.
+    </p>
+
+</section>
+
+
+<section class="features-section">
+
+    <div class="feature-container feature-container-wide">
+
+        <!-- SMS SCAM DETECTION -->
+
+        <a href="{{ url_for('sms_detection') }}" class="feature-card">
+
+            <div class="feature-icon">💬</div>
+
+            <h3>SMS Scam Detection</h3>
+
+            <p>
+                Analyze SMS content for suspicious
+                payment, OTP and account-related requests.
+            </p>
+
+            <span class="feature-link">
+                Explore Feature →
+            </span>
+
+        </a>
+
+
+        <!-- URL ANALYSIS -->
+
+        <a href="{{ url_for('url_analysis') }}" class="feature-card">
+
+            <div class="feature-icon">🔗</div>
+
+            <h3>URL Analysis</h3>
+
+            <p>
+                Check URLs for suspicious keywords,
+                IP addresses, HTTP usage and other indicators.
+            </p>
+
+            <span class="feature-link">
+                Explore Feature →
+            </span>
+
+        </a>
+
+
+        <!-- EXPLAINABLE RESULTS -->
+
+        <a href="{{ url_for('explainable_results') }}" class="feature-card">
+
+            <div class="feature-icon">🧠</div>
+
+            <h3>Explainable Results</h3>
+
+            <p>
+                Results show the indicators that contributed
+                to the risk assessment.
+            </p>
+
+            <span class="feature-link">
+                Explore Feature →
+            </span>
+
+        </a>
+
+
+        <!-- RISK CLASSIFICATION -->
+
+        <a href="{{ url_for('risk_classification') }}" class="feature-card">
+
+            <div class="feature-icon">⚠️</div>
+
+            <h3>Risk Classification</h3>
+
+            <p>
+                Results are grouped into LOW, MEDIUM,
+                HIGH and CRITICAL risk levels.
+            </p>
+
+            <span class="feature-link">
+                Explore Feature →
+            </span>
+
+        </a>
+
+
+        <!-- SAFETY RECOMMENDATIONS -->
+
+        <a href="{{ url_for('safety_recommendations') }}" class="feature-card">
+
+            <div class="feature-icon">🛡️</div>
+
+            <h3>Safety Recommendations</h3>
+
+            <p>
+                Users receive practical actions such as
+                verifying sources and avoiding sensitive-data sharing.
+            </p>
+
+            <span class="feature-link">
+                Explore Feature →
+            </span>
+
+        </a>
+
+    </div>
+
+</section>
+
+
+{% endblock %}

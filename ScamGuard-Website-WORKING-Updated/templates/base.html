@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>
+        {% block title %}
+        ScamGuard - Digital Scam Detection
+        {% endblock %}
+    </title>
+
+    <!-- MAIN CSS -->
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+<body>
+
+<header class="navbar">
+
+    <!-- LOGO -->
+    <a class="logo"
+       href="{{ url_for('home') }}">
+        🛡️ ScamGuard
+    </a>
+
+
+    <!-- NAVIGATION -->
+    <nav class="desktop-nav">
+
+        <a href="{{ url_for('home') }}">
+            Home
+        </a>
+
+        <a href="{{ url_for('features') }}">
+            Features
+        </a>
+
+        <a href="{{ url_for('scan') }}">
+            Scan
+        </a>
+
+        <a href="{{ url_for('how') }}">
+            How It Works
+        </a>
+
+        <a href="{{ url_for('about') }}">
+            About
+        </a>
+
+        <a href="{{ url_for('history') }}">
+            History
+        </a>
+
+    </nav>
+
+
+    <!-- NO EXTRA SCAN NOW BUTTON -->
+
+</header>
+
+
+<main>
+
+    {% block content %}
+    {% endblock %}
+
+</main>
+
+
+<footer>
+
+    <div class="footer-inner">
+
+        <div>
+
+            <div class="footer-logo">
+                🛡️ ScamGuard
+            </div>
+
+            <p>
+                AI-Powered Digital Safety
+            </p>
+
+        </div>
+
+
+        <div class="footer-links">
+
+            <a href="{{ url_for('home') }}">
+                Home
+            </a>
+
+            <a href="{{ url_for('features') }}">
+                Features
+            </a>
+
+            <a href="{{ url_for('scan') }}">
+                Scan
+            </a>
+
+            <a href="{{ url_for('about') }}">
+                About
+            </a>
+
+            <a href="{{ url_for('history') }}">
+                History
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <div class="footer-bottom">
+
+        © 2026 ScamGuard.
+        Digital Scam Detection and Prevention Platform.
+
+    </div>
+
+</footer>
+
+
+<!-- MAIN JAVASCRIPT -->
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+
+</html>

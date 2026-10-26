@@ -1,0 +1,138 @@
+```html
+{% extends "base.html" %}
+
+{% block title %}Safety Recommendations - ScamGuard{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+
+    <p class="small-title">SCAMGUARD FEATURE</p>
+
+    <h1>Safety Recommendations</h1>
+
+    <p>
+        Learn practical steps to protect yourself from
+        digital scams.
+    </p>
+
+</section>
+
+
+<section class="feature-detail">
+
+    <div class="feature-detail-card">
+
+        <div class="feature-icon">🛡️</div>
+
+        <h2>Stay Safe From Digital Scams</h2>
+
+        <p>
+            When a message or URL appears suspicious,
+            follow these safety recommendations.
+        </p>
+
+
+        <div class="safety-item">
+
+            <h3>🔐 Never Share OTPs</h3>
+
+            <p>
+                Never share OTPs, verification codes,
+                passwords or PINs with another person.
+            </p>
+
+        </div>
+
+
+        <div class="safety-item">
+
+            <h3>🔗 Avoid Suspicious Links</h3>
+
+            <p>
+                Do not click unexpected links received through
+                SMS, email or social media.
+            </p>
+
+        </div>
+
+
+        <div class="safety-item">
+
+            <h3>💳 Verify Payment Requests</h3>
+
+            <p>
+                Verify unexpected payment or money transfer
+                requests using an official source.
+            </p>
+
+        </div>
+
+
+        <div class="safety-item">
+
+            <h3>📱 Verify the Sender</h3>
+
+            <p>
+                Do not trust a message only because it appears
+                to come from a familiar organization.
+            </p>
+
+        </div>
+
+
+        <div class="safety-item">
+
+            <h3>⚠️ Do Not Act Under Pressure</h3>
+
+            <p>
+                Scammers often create urgency or fear.
+                Take time to verify the information.
+            </p>
+
+        </div>
+
+
+        <div class="safety-item">
+
+            <h3>🏦 Contact Official Sources</h3>
+
+            <p>
+                If you receive a suspicious banking or account
+                message, contact the organization through its
+                official website or customer support.
+            </p>
+
+        </div>
+
+
+        <div class="safety-item">
+
+            <h3> 🛡️ Official Cyber Scam Reporting</h3>
+
+            <p>
+                Report suspicious messages or impersonation calls
+                through the official
+                <a href="https://sancharsaathi.gov.in/sfc/"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                    Sanchar Saathi – Chakshu
+                </a>
+                reporting portal.
+            </p>
+
+        </div>
+
+
+        <br>
+
+        <a href="{{ url_for('features') }}" class="btn">
+            ← Back to Features
+        </a>
+
+    </div>
+
+</section>
+
+{% endblock %}
+```

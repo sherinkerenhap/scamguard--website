@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}SMS Scam Detection - ScamGuard{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <p class="small-title">SMS PROTECTION</p>
+    <h1>SMS Scam Detection</h1>
+    <p>
+        Analyze suspicious SMS messages for scam indicators.
+    </p>
+</section>
+
+<section class="scanner-section">
+
+    <div class="scanner-box">
+
+        <label for="smsText">
+            SMS content
+        </label>
+
+        <textarea id="smsText"
+                  placeholder="Paste SMS content here..."></textarea>
+
+        <button class="scan-button"
+                onclick="quickScan('smsText', 'smsResult')">
+            💬 Analyze SMS
+        </button>
+
+        <div id="smsResult" class="result-box"></div>
+
+    </div>
+
+</section>
+
+{% endblock %}

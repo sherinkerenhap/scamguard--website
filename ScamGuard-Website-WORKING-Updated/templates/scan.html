@@ -1,0 +1,614 @@
+{% extends "base.html" %}
+
+{% block title %}Scan - ScamGuard{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+
+    <p class="small-title">SCAM SCANNER</p>
+
+    <h1>Analyze Suspicious Content</h1>
+
+    <p>
+        Check a message or URL and view the detected
+        indicators and risk level.
+    </p>
+
+</section>
+
+
+<section class="scanner-section">
+
+    <div class="scanner-box scan-page-box">
+
+        <!-- =========================
+             TABS
+        ========================== -->
+
+        <div class="scan-tabs">
+
+            <button
+                type="button"
+                class="scan-tab active"
+                id="messageTab"
+            >
+                💬 Message
+            </button>
+
+
+            <button
+                type="button"
+                class="scan-tab"
+                id="urlTab"
+            >
+                🔗 URL
+            </button>
+
+        </div>
+
+
+        <!-- =========================
+             MESSAGE PANEL
+        ========================== -->
+
+        <div id="messagePanel">
+
+            <label for="scanMessage">
+                Message / SMS
+            </label>
+
+            <textarea
+                id="scanMessage"
+                placeholder="Paste the suspicious message here..."
+            ></textarea>
+
+
+            <button
+                type="button"
+                class="scan-button"
+                id="messageScanButton"
+            >
+                🔍 Analyze Message
+            </button>
+
+        </div>
+
+
+        <!-- =========================
+             URL PANEL
+        ========================== -->
+
+        <div
+            id="urlPanel"
+            style="display: none;"
+        >
+
+            <label for="scanUrl">
+                Website URL
+            </label>
+
+
+            <input
+                type="text"
+                id="scanUrl"
+                class="text-input"
+                placeholder="https://example.com"
+                autocomplete="off"
+            >
+
+
+            <button
+                type="button"
+                class="scan-button"
+                id="urlScanButton"
+            >
+                🔗 Analyze URL
+            </button>
+
+        </div>
+
+
+        <!-- =========================
+             RESULT
+        ========================== -->
+
+        <div
+            id="scanResult"
+            class="result-box"
+            style="display: none;"
+        ></div>
+
+    </div>
+
+</section>
+
+
+<script>
+
+/* =====================================================
+   WAIT UNTIL PAGE IS FULLY LOADED
+===================================================== */
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    console.log("ScamGuard scanner loaded");
+
+
+    /* =================================================
+       GET ELEMENTS
+    ================================================= */
+
+    const messageTab =
+        document.getElementById("messageTab");
+
+    const urlTab =
+        document.getElementById("urlTab");
+
+    const messagePanel =
+        document.getElementById("messagePanel");
+
+    const urlPanel =
+        document.getElementById("urlPanel");
+
+    const messageScanButton =
+        document.getElementById("messageScanButton");
+
+    const urlScanButton =
+        document.getElementById("urlScanButton");
+
+    const messageInput =
+        document.getElementById("scanMessage");
+
+    const urlInput =
+        document.getElementById("scanUrl");
+
+    const resultBox =
+        document.getElementById("scanResult");
+
+
+    /* =================================================
+       CHECK ELEMENTS
+    ================================================= */
+
+    console.log("Message Tab:", messageTab);
+    console.log("URL Tab:", urlTab);
+    console.log("Message Panel:", messagePanel);
+    console.log("URL Panel:", urlPanel);
+
+
+    /* =================================================
+       MESSAGE TAB
+    ================================================= */
+
+    messageTab.addEventListener("click", function () {
+
+        console.log("MESSAGE TAB CLICKED");
+
+        messagePanel.style.display = "block";
+
+        urlPanel.style.display = "none";
+
+
+        messageTab.classList.add("active");
+
+        urlTab.classList.remove("active");
+
+
+        resultBox.innerHTML = "";
+
+        resultBox.style.display = "none";
+
+    });
+
+
+    /* =================================================
+       URL TAB
+    ================================================= */
+
+    urlTab.addEventListener("click", function () {
+
+        console.log("URL TAB CLICKED");
+
+        messagePanel.style.display = "none";
+
+        urlPanel.style.display = "block";
+
+
+        messageTab.classList.remove("active");
+
+        urlTab.classList.add("active");
+
+
+        resultBox.innerHTML = "";
+
+        resultBox.style.display = "none";
+
+    });
+
+
+    /* =================================================
+       MESSAGE SCAN BUTTON
+    ================================================= */
+
+    messageScanButton.addEventListener(
+        "click",
+        async function () {
+
+            const message =
+                messageInput.value.trim();
+
+
+            if (!message) {
+
+                showError(
+                    "Please enter a message."
+                );
+
+                return;
+            }
+
+
+            resultBox.style.display = "block";
+
+            resultBox.innerHTML = `
+
+                <div class="loading-message">
+
+                    🔍 Analyzing message...
+
+                </div>
+
+            `;
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/check-text",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                text: message
+                            })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                console.log(
+                    "MESSAGE RESPONSE:",
+                    data
+                );
+
+
+                if (!data.success) {
+
+                    showError(
+                        data.error ||
+                        "Message analysis failed."
+                    );
+
+                    return;
+                }
+
+
+                showResult(
+                    data.data,
+                    "message",
+                    message
+                );
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+                showError(
+                    "Unable to connect to ScamGuard."
+                );
+
+            }
+
+        }
+    );
+
+
+    /* =================================================
+       URL SCAN BUTTON
+    ================================================= */
+
+    urlScanButton.addEventListener(
+        "click",
+        async function () {
+
+            const url =
+                urlInput.value.trim();
+
+
+            if (!url) {
+
+                showError(
+                    "Please enter a URL."
+                );
+
+                return;
+            }
+
+
+            resultBox.style.display = "block";
+
+            resultBox.innerHTML = `
+
+                <div class="loading-message">
+
+                    🔍 Analyzing URL...
+
+                </div>
+
+            `;
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/check-url",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                url: url
+                            })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                console.log(
+                    "URL RESPONSE:",
+                    data
+                );
+
+
+                if (!data.success) {
+
+                    showError(
+                        data.error ||
+                        "URL analysis failed."
+                    );
+
+                    return;
+                }
+
+
+                showResult(
+                    data.data,
+                    "url",
+                    url
+                );
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+                showError(
+                    "Unable to connect to ScamGuard."
+                );
+
+            }
+
+        }
+    );
+
+
+    /* =================================================
+       SHOW ERROR
+    ================================================= */
+
+    function showError(message) {
+
+        resultBox.style.display = "block";
+
+        resultBox.innerHTML = `
+
+            <div class="error-message">
+
+                ⚠️ ${message}
+
+            </div>
+
+        `;
+
+    }
+
+
+    /* =================================================
+       SHOW RESULT
+    ================================================= */
+
+    function showResult(
+        data,
+        type,
+        originalValue
+    ) {
+
+        let reasonsHTML = "";
+
+
+        if (
+            data.reasons &&
+            data.reasons.length > 0
+        ) {
+
+            reasonsHTML = `
+
+                <p>
+                    <strong>
+                        🔎 Detected Indicators:
+                    </strong>
+                </p>
+
+                <ul>
+
+                    ${data.reasons
+                        .map(
+                            reason =>
+                            `<li>${reason}</li>`
+                        )
+                        .join("")}
+
+                </ul>
+
+            `;
+
+        }
+
+
+        const title =
+            type === "url"
+                ? "🔗 URL Scan Result"
+                : "💬 Message Scan Result";
+
+
+        const valueLabel =
+            type === "url"
+                ? "URL"
+                : "Message";
+
+
+        resultBox.style.display = "block";
+
+
+        resultBox.innerHTML = `
+
+            <div class="scan-result">
+
+                <h3>
+                    ${title}
+                </h3>
+
+
+                <p>
+
+                    <strong>
+                        ${valueLabel}:
+                    </strong>
+
+                    ${originalValue}
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        Result:
+                    </strong>
+
+                    ${data.result || "Unknown"}
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        Risk Level:
+                    </strong>
+
+                    ${data.risk_level || "Unknown"}
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        Risk Score:
+                    </strong>
+
+                    ${data.risk_score || 0}/100
+
+                </p>
+
+                <p>
+
+                    <strong>
+                        Detection Algorithm:
+                    </strong>
+
+                    ${data.ml_algorithm || "Random Forest"}
+
+                </p>
+
+
+                ${reasonsHTML}
+
+
+                <p>
+
+                    <strong>
+                        Recommendation:
+                    </strong>
+
+                    ${data.recommendation || ""}
+
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+
+    /* =================================================
+       URL PARAMETER
+       
+       /scan?type=url
+       automatically opens URL tab
+    ================================================= */
+
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+
+    const scanType =
+        params.get("type");
+
+
+    if (scanType === "url") {
+
+        urlTab.click();
+
+    }
+
+});
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Risk Classification - ScamGuard{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+
+    <p class="small-title">SCAMGUARD FEATURE</p>
+
+    <h1>Risk Classification</h1>
+
+    <p>
+        Understand how ScamGuard categorizes digital scam risk.
+    </p>
+
+</section>
+
+<section class="feature-detail">
+
+    <div class="feature-detail-card">
+
+        <div class="feature-icon">⚠️</div>
+
+        <h2>Understanding Risk Levels</h2>
+
+        <p>
+            ScamGuard uses risk levels to communicate how
+            suspicious a message or URL may be.
+        </p>
+
+
+        <div class="risk-level-card">
+
+            <h3>🟢 LOW (0-25)</h3>
+
+            <p>
+                Few or no suspicious indicators are present.
+                The content appears relatively safe, but users
+                should still remain cautious.
+            </p>
+
+        </div>
+
+
+        <div class="risk-level-card">
+
+            <h3>🟡 MEDIUM(26-50)</h3>
+
+            <p>
+                Some suspicious indicators are present.
+                Users should verify the sender and information
+                before taking any action.
+            </p>
+
+        </div>
+
+
+        <div class="risk-level-card">
+
+            <h3>🟠 HIGH(51-75)</h3>
+
+            <p>
+                Strong scam indicators are present.
+                Users should avoid clicking links, sharing
+                information or making payments.
+            </p>
+
+        </div>
+
+
+        <div class="risk-level-card">
+
+            <h3>🔴 CRITICAL(76-100)</h3>
+
+            <p>
+                Multiple serious scam indicators are present.
+                The user should stop interaction immediately
+                and verify the source through an official channel.
+            </p>
+
+        </div>
+
+
+        <h3>How Risk Helps Users</h3>
+
+        <p>
+            Risk classification helps users understand the
+            seriousness of suspicious content and decide
+            what action should be taken.
+        </p>
+
+
+        <br>
+
+        <a href="{{ url_for('features') }}" class="btn">
+            ← Back to Features
+        </a>
+
+    </div>
+
+</section>
+
+{% endblock %}

@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Explainable Results - ScamGuard{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <p class="small-title">SCAMGUARD FEATURE</p>
+
+    <h1>Explainable Results</h1>
+
+    <p>
+        Understand why a message may be identified as suspicious
+        or potentially fraudulent.
+    </p>
+</section>
+
+<section class="feature-detail">
+
+    <div class="feature-detail-card">
+
+        <div class="feature-icon">🧠</div>
+
+        <h2>Why Is This Message Suspicious?</h2>
+
+        <p>
+            Enter a message below to understand the suspicious
+            indicators that may appear in it.
+        </p>
+
+        <textarea
+            id="explainMessage"
+            class="explain-input"
+            placeholder="Example: Your bank account will be blocked. Click this link immediately and enter your OTP..."
+        ></textarea>
+
+        <button
+            type="button"
+            class="btn"
+            onclick="explainMessage()">
+            Explain Message
+        </button>
+
+        <div id="explanationResult" class="explanation-result">
+
+            <h3>🔍 Explanation</h3>
+
+            <div id="explanationContent"></div>
+
+        </div>
+
+        <br>
+
+        <a href="{{ url_for('features') }}" class="btn">
+            ← Back to Features
+        </a>
+
+    </div>
+
+</section>
+
+<script>
+
+function explainMessage() {
+
+    const message =
+        document.getElementById("explainMessage").value.trim();
+
+    const result =
+        document.getElementById("explanationResult");
+
+    const content =
+        document.getElementById("explanationContent");
+
+    if (!message) {
+
+        content.innerHTML = `
+            <p>
+                ⚠️ Please enter a message to explain.
+            </p>
+        `;
+
+        result.style.display = "block";
+
+        return;
+    }
+
+    let reasons = [];
+
+    const lowerMessage = message.toLowerCase();
+
+
+    // OTP
+    if (
+        lowerMessage.includes("otp") ||
+        lowerMessage.includes("one time password") ||
+        lowerMessage.includes("verification code")
+    ) {
+
+        reasons.push(`
+            <div class="explanation-item">
+                <strong>🔐 OTP / Verification Request</strong>
+                <p>
+                    The message asks for an OTP or verification code.
+                    Genuine organizations normally do not ask users
+                    to share their OTP.
+                </p>
+            </div>
+        `);
+    }
+
+
+    // Urgency
+    if (
+        lowerMessage.includes("urgent") ||
+        lowerMessage.includes("immediately") ||
+        lowerMessage.includes("now") ||
+        lowerMessage.includes("as soon as possible")
+    ) {
+
+        reasons.push(`
+            <div class="explanation-item">
+                <strong>⏰ Urgency</strong>
+                <p>
+                    The message creates pressure by asking the user
+                    to take immediate action.
+                </p>
+            </div>
+        `);
+    }
+
+
+    // Account threat
+    if (
+        lowerMessage.includes("blocked") ||
+        lowerMessage.includes("suspended") ||
+        lowerMessage.includes("deactivated") ||
+        lowerMessage.includes("account will")
+    ) {
+
+        reasons.push(`
+            <div class="explanation-item">
+                <strong>⚠️ Account Threat</strong>
+                <p>
+                    The message threatens account blocking,
+                    suspension or deactivation to create fear.
+                </p>
+            </div>
+        `);
+    }
+
+
+    // Money
+    if (
+        lowerMessage.includes("payment") ||
+        lowerMessage.includes("money") ||
+        lowerMessage.includes("transfer") ||
+        lowerMessage.includes("refund") ||
+        lowerMessage.includes("prize") ||
+        lowerMessage.includes("reward")
+    ) {
+
+        reasons.push(`
+            <div class="explanation-item">
+                <strong>💰 Financial Request</strong>
+                <p>
+                    The message contains payment, money transfer,
+                    refund, prize or reward related content.
+                </p>
+            </div>
+        `);
+    }
+
+
+    // Link
+    if (
+        lowerMessage.includes("http") ||
+        lowerMessage.includes("www.") ||
+        lowerMessage.includes("click") ||
+        lowerMessage.includes("link")
+    ) {
+
+        reasons.push(`
+            <div class="explanation-item">
+                <strong>🔗 Link / Click Request</strong>
+                <p>
+                    The message asks the user to click or open
+                    a link, which can be used to redirect users
+                    to fraudulent websites.
+                </p>
+            </div>
+        `);
+    }
+
+
+    // Personal information
+    if (
+        lowerMessage.includes("password") ||
+        lowerMessage.includes("pin") ||
+        lowerMessage.includes("card number") ||
+        lowerMessage.includes("bank details") ||
+        lowerMessage.includes("personal information")
+    ) {
+
+        reasons.push(`
+            <div class="explanation-item">
+                <strong>🔒 Sensitive Information Request</strong>
+                <p>
+                    The message asks for sensitive personal,
+                    banking or authentication information.
+                </p>
+            </div>
+        `);
+    }
+
+
+    if (reasons.length === 0) {
+
+        content.innerHTML = `
+            <div class="explanation-item">
+                <strong>🟢 No Common Scam Indicators Found</strong>
+                <p>
+                    No common indicators such as OTP requests,
+                    urgent language, account threats, payment
+                    requests or suspicious links were detected
+                    using this simple explanation check.
+                </p>
+                <p>
+                    This does not guarantee that the message is safe.
+                    Always verify unexpected messages independently.
+                </p>
+            </div>
+        `;
+
+    } else {
+
+        content.innerHTML = `
+            <p>
+                The following indicators may explain why this
+                message could be suspicious:
+            </p>
+
+            ${reasons.join("")}
+        `;
+    }
+
+    result.style.display = "block";
+}
+
+</script>
+
+{% endblock %}

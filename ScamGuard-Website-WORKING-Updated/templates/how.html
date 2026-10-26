@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}How It Works - ScamGuard{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <p class="small-title">WORKFLOW</p>
+    <h1>How ScamGuard Works</h1>
+    <p>
+        The platform follows a simple analysis workflow
+        to provide understandable scam-risk information.
+    </p>
+</section>
+
+<section class="how-section">
+
+    <div class="workflow">
+
+        <div class="workflow-card">
+            <div class="workflow-number">01</div>
+            <div>
+                <h3>User Input</h3>
+                <p>
+                    The user enters a suspicious message,
+                    email, SMS, WhatsApp text or URL.
+                </p>
+            </div>
+        </div>
+
+        <div class="workflow-arrow">↓</div>
+
+        <div class="workflow-card">
+            <div class="workflow-number">02</div>
+            <div>
+                <h3>Preprocessing</h3>
+                <p>
+                    The input is cleaned and prepared
+                    for analysis.
+                </p>
+            </div>
+        </div>
+
+        <div class="workflow-arrow">↓</div>
+
+        <div class="workflow-card">
+            <div class="workflow-number">03</div>
+            <div>
+                <h3>Scam Indicator Analysis</h3>
+                <p>
+                    The system checks suspicious words,
+                    URLs, urgent requests and sensitive-data requests.
+                </p>
+            </div>
+        </div>
+
+        <div class="workflow-arrow">↓</div>
+
+        <div class="workflow-card">
+            <div class="workflow-number">04</div>
+            <div>
+                <h3>Risk Assessment</h3>
+                <p>
+                    Detected indicators are converted into
+                    a transparent risk score and risk level.
+                </p>
+            </div>
+        </div>
+
+        <div class="workflow-arrow">↓</div>
+
+        <div class="workflow-card">
+            <div class="workflow-number">05</div>
+            <div>
+                <h3>User Recommendation</h3>
+                <p>
+                    The system explains the indicators and
+                    provides a safety recommendation.
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}

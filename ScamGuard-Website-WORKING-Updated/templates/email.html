@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Email Scam Detection - ScamGuard{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <p class="small-title">EMAIL PROTECTION</p>
+    <h1>Email Scam Detection</h1>
+    <p>
+        Paste suspicious email content to check for
+        common scam indicators.
+    </p>
+</section>
+
+<section class="scanner-section">
+
+    <div class="scanner-box">
+
+        <label for="emailText">
+            Email content
+        </label>
+
+        <textarea id="emailText"
+                  placeholder="Paste email content here..."></textarea>
+
+        <button class="scan-button"
+                onclick="quickScan('emailText', 'emailResult')">
+            📧 Analyze Email
+        </button>
+
+        <div id="emailResult" class="result-box"></div>
+
+    </div>
+
+</section>
+
+{% endblock %}

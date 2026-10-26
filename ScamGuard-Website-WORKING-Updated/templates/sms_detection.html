@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}SMS Scam Detection - ScamGuard{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <p class="small-title">SCAMGUARD FEATURE</p>
+
+    <h1>SMS Scam Detection</h1>
+
+    <p>
+        Analyze SMS messages for suspicious payment,
+        OTP and account-related scam requests.
+    </p>
+</section>
+
+<section class="feature-detail">
+
+    <div class="feature-detail-card">
+
+        <div class="feature-icon">💬</div>
+
+        <h2>SMS Scam Detection</h2>
+
+        <p>
+            ScamGuard analyzes SMS messages and identifies
+            suspicious patterns that may indicate a digital scam.
+        </p>
+
+        <h3>What We Check</h3>
+
+        <ul>
+            <li>Suspicious payment requests</li>
+            <li>OTP requests</li>
+            <li>Account verification messages</li>
+            <li>Urgent or threatening messages</li>
+            <li>Suspicious links</li>
+            <li>Requests for sensitive information</li>
+        </ul>
+
+        <a href="{{ url_for('sms') }}" class="btn">
+            Start SMS Scan →
+        </a>
+
+        <br><br>
+
+        <a href="{{ url_for('features') }}" class="btn">
+            ← Back to Features
+        </a>
+
+    </div>
+
+</section>
+
+{% endblock %}
