@@ -1,43 +1,43 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+
+# =========================================================
+# ScamGuard - Flask Application
+# Render + Aiven MySQL
+# =========================================================
+
+import os
 import re
 from datetime import datetime
 from difflib import SequenceMatcher
 
-from ml_detector import predict_text, predict_url
-
+from flask import Flask, jsonify, render_template, request
 import mysql.connector
 
+from ml_detector import predict_text, predict_url
+
 app = Flask(__name__)
-
-# =========================================================
-# FLASK SECRET KEY
-# =========================================================
-
-app.secret_key = "scamguard-secret-key"
+app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key")
 
 
 # =========================================================
-# MYSQL DATABASE CONFIGURATION
+# MYSQL CONFIGURATION
 # =========================================================
 
-DB_HOST = "localhost"
-DB_USER = "root"
-DB_PASSWORD = "MySQL@1234"
-DB_NAME = "scamguard"
+DB_HOST = os.environ.get("DB_HOST", "localhost")
+DB_PORT = int(os.environ.get("DB_PORT", "3306"))
+DB_USER = os.environ.get("DB_USER", "root")
+DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
+DB_NAME = os.environ.get("DB_NAME", "scamguard")
 
-
-
-
-# =========================================================
-# MYSQL CONNECTION
-# =========================================================
 
 def get_mysql_connection():
     return mysql.connector.connect(
         host=DB_HOST,
+        port=DB_PORT,
         user=DB_USER,
         password=DB_PASSWORD,
-        database=DB_NAME
+        database=DB_NAME,
+        ssl_disabled=False,
+        connection_timeout=15
     )
 
 
@@ -46,21 +46,22 @@ def get_mysql_connection():
 # =========================================================
 
 def test_database_connection():
+    db = None
+    cursor = None
     try:
         db = get_mysql_connection()
         cursor = db.cursor()
-
         cursor.execute("SELECT 1")
         cursor.fetchone()
-
-        cursor.close()
-        db.close()
-
         return True
-
     except Exception as error:
         print("MySQL connection error:", error)
         return False
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
 
 
 # =========================================================
@@ -68,88 +69,50 @@ def test_database_connection():
 # =========================================================
 
 def setup_database():
-
     db = None
     cursor = None
 
     try:
-
         db = get_mysql_connection()
         cursor = db.cursor()
 
-        # -------------------------------------------------
-        # SCAM MESSAGES
-        # -------------------------------------------------
-
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS scam_messages (
-
                 id INT AUTO_INCREMENT PRIMARY KEY,
-
                 message TEXT NOT NULL,
-
                 label VARCHAR(20) NOT NULL,
-
-                source VARCHAR(100)
-                    DEFAULT 'ScamGuard',
-
-                category VARCHAR(100)
-                    DEFAULT 'SMS',
-
+                source VARCHAR(100) DEFAULT 'ScamGuard',
+                category VARCHAR(100) DEFAULT 'SMS',
                 risk_score INT DEFAULT 0,
-
-                created_at TIMESTAMP
-                    DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-
-        # -------------------------------------------------
-        # SCAN HISTORY
-        # -------------------------------------------------
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS scan_history (
-
                 id INT AUTO_INCREMENT PRIMARY KEY,
-
                 message TEXT NOT NULL,
-
                 result VARCHAR(100) NOT NULL,
-
                 risk_score INT DEFAULT 0,
-
-                risk_level VARCHAR(30)
-                    DEFAULT 'LOW',
-
+                risk_level VARCHAR(30) DEFAULT 'LOW',
                 detected_indicators TEXT,
-
                 recommendation TEXT,
-
-                scanned_at TIMESTAMP
-                    DEFAULT CURRENT_TIMESTAMP
+                scanned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
 
-        # Commit the ScamGuard detection and scan-history tables.
-
         db.commit()
-
-        print("All database tables are ready.")
-
+        print("Database tables are ready.")
         return True
 
     except Exception as error:
-
         print("Database setup failed:", error)
-
         return False
 
     finally:
-
-        if cursor is not None:
+        if cursor:
             cursor.close()
-
-        if db is not None:
+        if db:
             db.close()
 
 
@@ -158,64 +121,45 @@ def setup_database():
 # =========================================================
 
 def save_scan_history(content, result):
+    db = None
+    cursor = None
 
-    indicators = ", ".join(
-        result.get("matched_words", [])
-    )
-
+    indicators = ", ".join(result.get("matched_words", []))
     if not indicators:
-
-        indicators = ", ".join(
-            result.get("reasons", [])
-        )
+        indicators = ", ".join(result.get("reasons", []))
 
     try:
-
         db = get_mysql_connection()
         cursor = db.cursor()
 
         cursor.execute("""
-            INSERT INTO scan_history
-            (
-                message,
-                result,
-                risk_score,
-                risk_level,
-                detected_indicators,
-                recommendation
+            INSERT INTO scan_history (
+                message, result, risk_score, risk_level,
+                detected_indicators, recommendation
             )
-            VALUES
-            (
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s
-            )
+            VALUES (%s, %s, %s, %s, %s, %s)
         """, (
             content,
-            result["result"],
-            int(result["risk_score"]),
-            result["risk_level"],
+            result.get("result", "UNKNOWN"),
+            int(result.get("risk_score", 0)),
+            result.get("risk_level", "LOW"),
             indicators,
-            result["recommendation"]
+            result.get("recommendation", "")
         ))
 
         db.commit()
-
-        cursor.close()
-        db.close()
-
         print("Scan saved successfully.")
-
         return True
 
     except Exception as error:
-
         print("MySQL save failed:", error)
-
         return False
+
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
 
 
 # =========================================================
@@ -223,84 +167,53 @@ def save_scan_history(content, result):
 # =========================================================
 
 def get_history(limit=50):
+    db = None
+    cursor = None
 
     try:
-
         db = get_mysql_connection()
-
-        cursor = db.cursor(
-            dictionary=True
-        )
+        cursor = db.cursor(dictionary=True)
 
         cursor.execute("""
-            SELECT
-                id,
-                message,
-                result,
-                risk_score,
-                risk_level,
-                detected_indicators,
-                recommendation,
-                scanned_at
+            SELECT id, message, result, risk_score, risk_level,
+                   detected_indicators, recommendation, scanned_at
             FROM scan_history
             ORDER BY id DESC
             LIMIT %s
-        """, (limit,))
+        """, (int(limit),))
 
-        rows = cursor.fetchall()
-
-        cursor.close()
-        db.close()
-
-        return rows
+        return cursor.fetchall()
 
     except Exception as error:
-
         print("History read failed:", error)
-
         return []
+
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
 
 
 # =========================================================
-# TEXT NORMALIZATION
+# TEXT NORMALIZATION AND SIMILARITY
 # =========================================================
 
 def normalize_text(text):
-
     text = (text or "").lower()
-
-    text = re.sub(
-        r"[^a-z0-9\s]",
-        " ",
-        text
-    )
-
-    text = re.sub(
-        r"\s+",
-        " ",
-        text
-    )
-
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
+    text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 
-# =========================================================
-# SIMILARITY
-# =========================================================
-
 def calculate_similarity(text1, text2):
-
     text1 = normalize_text(text1)
     text2 = normalize_text(text2)
 
     if not text1 or not text2:
         return 0
 
-    return SequenceMatcher(
-        None,
-        text1,
-        text2
-    ).ratio()
+    return SequenceMatcher(None, text1, text2).ratio()
 
 
 # =========================================================
@@ -308,31 +221,19 @@ def calculate_similarity(text1, text2):
 # =========================================================
 
 def find_database_match(message):
+    db = None
+    cursor = None
 
     try:
-
         db = get_mysql_connection()
-
-        cursor = db.cursor(
-            dictionary=True
-        )
+        cursor = db.cursor(dictionary=True)
 
         cursor.execute("""
-            SELECT
-                id,
-                message,
-                label,
-                source,
-                category,
-                risk_score
+            SELECT id, message, label, source, category, risk_score
             FROM scam_messages
         """)
 
         rows = cursor.fetchall()
-
-        cursor.close()
-        db.close()
-
         if not rows:
             return None
 
@@ -340,236 +241,122 @@ def find_database_match(message):
         best_ham = None
 
         for row in rows:
-
-            similarity = calculate_similarity(
-                message,
-                row["message"]
-            )
-
+            similarity = calculate_similarity(message, row["message"])
             row["similarity"] = similarity
-
-            label = str(
-                row.get("label", "")
-            ).upper()
+            label = str(row.get("label", "")).upper()
 
             if label == "SPAM":
-
-                if (
-                    best_spam is None
-                    or similarity >
-                    best_spam["similarity"]
-                ):
-
+                if best_spam is None or similarity > best_spam["similarity"]:
                     best_spam = row
 
             elif label == "HAM":
-
-                if (
-                    best_ham is None
-                    or similarity >
-                    best_ham["similarity"]
-                ):
-
+                if best_ham is None or similarity > best_ham["similarity"]:
                     best_ham = row
 
         if best_spam and best_ham:
-
-            if (
-                best_spam["similarity"]
-                >= best_ham["similarity"]
-            ):
-
+            if best_spam["similarity"] >= best_ham["similarity"]:
                 return best_spam
-
             return best_ham
 
-        if best_spam:
-            return best_spam
-
-        if best_ham:
-            return best_ham
-
-        return None
+        return best_spam or best_ham
 
     except Exception as error:
-
-        print(
-            "Database matching error:",
-            error
-        )
-
+        print("Database matching error:", error)
         return None
+
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
 
 
 # =========================================================
-# GLOBAL VARIABLES
+# GLOBAL TEMPLATE VARIABLES
 # =========================================================
 
 @app.context_processor
 def inject_globals():
-
-    return {
-        "current_year":
-            datetime.now().year
-    }
+    return {"current_year": datetime.now().year}
 
 
 # =========================================================
-# HOME
+# WEBSITE ROUTES
 # =========================================================
 
 @app.route("/")
 def home():
+    return render_template("index.html")
 
-    return render_template(
-        "index.html"
-    )
-
-
-# =========================================================
-# FEATURES
-# =========================================================
 
 @app.route("/features")
 def features():
+    return render_template("features.html")
 
-    return render_template(
-        "features.html"
-    )
-
-
-# =========================================================
-# FEATURE PAGES
-# =========================================================
 
 @app.route("/sms-detection")
 def sms_detection():
-
-    return render_template(
-        "sms_detection.html"
-    )
+    return render_template("sms_detection.html")
 
 
 @app.route("/url-analysis")
 def url_analysis():
+    return render_template("url_analysis.html")
 
-    return render_template(
-        "url_analysis.html"
-    )
 
 @app.route("/url-scan")
 def url_scan():
     return render_template("url_scan.html")
 
+
 @app.route("/explainable-results")
 def explainable_results():
-
-    return render_template(
-        "explainable_results.html"
-    )
+    return render_template("explainable_results.html")
 
 
 @app.route("/risk-classification")
 def risk_classification():
-
-    return render_template(
-        "risk_classification.html"
-    )
+    return render_template("risk_classification.html")
 
 
 @app.route("/safety-recommendations")
 def safety_recommendations():
+    return render_template("safety_recommendations.html")
 
-    return render_template(
-        "safety_recommendations.html"
-    )
-
-
-# =========================================================
-# MAIN SCAN PAGE
-#
-# /scan
-# /scan?type=message
-# /scan?type=url
-# =========================================================
 
 @app.route("/scan")
 def scan():
+    scan_type = request.args.get("type", "message").lower()
 
-    scan_type = request.args.get(
-        "type",
-        "message"
-    ).lower()
-
-    if scan_type not in (
-        "message",
-        "url"
-    ):
-
+    if scan_type not in ("message", "url"):
         scan_type = "message"
 
-    return render_template(
-        "scan.html",
-        scan_type=scan_type
-    )
+    return render_template("scan.html", scan_type=scan_type)
 
-
-# =========================================================
-# URL ONLY SCAN PAGE
-#
-# IMPORTANT:
-# This route is specifically for URL Analysis.
-# =========================================================
-
-# =========================================================
-# OTHER PAGES
-# =========================================================
 
 @app.route("/how")
 def how():
-
-    return render_template(
-        "how.html"
-    )
+    return render_template("how.html")
 
 
 @app.route("/about")
 def about():
-
-    return render_template(
-        "about.html"
-    )
+    return render_template("about.html")
 
 
 @app.route("/email")
 def email():
-
-    return render_template(
-        "email.html"
-    )
+    return render_template("email.html")
 
 
 @app.route("/sms")
 def sms():
+    return render_template("sms.html")
 
-    return render_template(
-        "sms.html"
-    )
-
-
-# =========================================================
-# HISTORY PAGE
-# =========================================================
 
 @app.route("/history")
 def history():
-
-    scans = get_history()
-
-    return render_template(
-        "history.html",
-        scans=scans
-    )
+    return render_template("history.html", scans=get_history())
 
 
 # =========================================================
@@ -577,89 +364,39 @@ def history():
 # =========================================================
 
 SCAM_RULES = {
-
     "Urgent language": [
-
-        "urgent",
-        "immediately",
-        "act now",
-        "last chance",
-        "within 24 hours",
-        "verify now",
-        "do it now"
+        "urgent", "immediately", "act now", "last chance",
+        "within 24 hours", "verify now", "do it now"
     ],
-
     "OTP request": [
-
-        "otp",
-        "one time password",
-        "verification code"
+        "otp", "one time password", "verification code"
     ],
-
     "Bank/card information": [
-
-        "bank account",
-        "account number",
-        "card number",
-        "cvv",
-        "debit card",
-        "credit card",
-        "bank details"
+        "bank account", "account number", "card number", "cvv",
+        "debit card", "credit card", "bank details"
     ],
-
     "Password request": [
-
-        "password",
-        "login password",
-        "pin",
-        "mpin"
+        "password", "login password", "pin", "mpin"
     ],
-
     "Payment request": [
-
-        "send money",
-        "transfer money",
-        "pay now",
-        "payment required",
-        "make payment",
-        "registration fee"
+        "send money", "transfer money", "pay now",
+        "payment required", "make payment", "registration fee"
     ],
-
     "Prize/reward claim": [
-
-        "you won",
-        "winner",
-        "prize",
-        "reward",
-        "lottery",
-        "cash prize",
-        "congratulations"
+        "you won", "winner", "prize", "reward", "lottery",
+        "cash prize", "congratulations"
     ],
-
     "Fake job indicators": [
-
-        "work from home",
-        "job offer",
-        "selected for job",
-        "earn money",
-        "part time job",
-        "registration fee"
+        "work from home", "job offer", "selected for job",
+        "earn money", "part time job", "registration fee"
     ],
-
     "Account threat": [
-
-        "account will be blocked",
-        "account blocked",
-        "account suspended",
-        "verify your account"
+        "account will be blocked", "account blocked",
+        "account suspended", "verify your account"
     ],
-
     "Suspicious link request": [
-
-        "click here",
-        "click immediately",
-        "click the link",
-        "open this link"
+        "click here", "click immediately",
+        "click the link", "open this link"
     ]
 }
 
@@ -669,27 +406,26 @@ SCAM_RULES = {
 # =========================================================
 
 def analyze_text(text):
-
     text = (text or "").strip()
     lower = text.lower()
     reasons = []
     matched_words = []
 
-    # -----------------------------------------------------
-    # 1. RANDOM FOREST ML PREDICTION
-    # -----------------------------------------------------
-    ml_result = predict_text(text)
-    ml_score = int(ml_result.get("score", 0))
+    try:
+        ml_result = predict_text(text) or {}
+    except Exception as error:
+        print("Text ML prediction failed:", error)
+        ml_result = {}
+
+    ml_score = int(ml_result.get("score", 0) or 0)
     ml_label = ml_result.get("label", "UNKNOWN")
 
     if ml_result.get("available"):
         reasons.append(
-            f"Random Forest classified the message as {ml_label} ({ml_score}% scam probability)"
+            f"Random Forest classified the message as {ml_label} "
+            f"({ml_score}% scam probability)"
         )
 
-    # -----------------------------------------------------
-    # 2. SUPPORTING RULE CHECKING
-    # -----------------------------------------------------
     for rule_name, keywords in SCAM_RULES.items():
         found = [word for word in keywords if word in lower]
         if found:
@@ -702,9 +438,6 @@ def analyze_text(text):
 
     rule_score = min(len(reasons) * 10 + len(matched_words) * 2, 100)
 
-    # -----------------------------------------------------
-    # 3. DATABASE SIMILARITY SUPPORT
-    # -----------------------------------------------------
     database_match = find_database_match(text)
     database_score = 0
     database_similarity = 0
@@ -713,24 +446,19 @@ def analyze_text(text):
 
     if database_match:
         database_similarity = database_match["similarity"]
-        database_label = str(database_match["label"]).upper()
-        database_score = int(database_match["risk_score"] or 0)
-        database_message = database_match["message"]
+        database_label = str(database_match.get("label", "")).upper()
+        database_score = int(database_match.get("risk_score") or 0)
+        database_message = database_match.get("message")
 
         if database_similarity >= 0.80:
             reasons.append("Highly similar message found in the database")
         elif database_similarity >= 0.60 and database_label == "SPAM":
             reasons.append("Similar suspicious message found in the database")
 
-    # -----------------------------------------------------
-    # 4. HYBRID FINAL SCORE
-    # Random Forest is the primary ML score. Rules/database
-    # are supporting signals for explainability.
-    # -----------------------------------------------------
-    final_score = ml_score
-
     if ml_result.get("available"):
-        final_score = int(round(ml_score * 0.70 + rule_score * 0.20 + database_score * 0.10))
+        final_score = int(round(
+            ml_score * 0.70 + rule_score * 0.20 + database_score * 0.10
+        ))
     else:
         final_score = rule_score
         if database_match and database_label == "SPAM":
@@ -742,36 +470,39 @@ def analyze_text(text):
     final_score = min(max(int(final_score), 0), 100)
 
     if final_score <= 25:
-        level = "LOW"
-        result = "SAFE"
+        level, result = "LOW", "SAFE"
         recommendation = (
-            "No major scam indicators were detected. Still verify unexpected messages "
-            "before sharing personal information."
+            "No major scam indicators were detected. Still verify unexpected "
+            "messages before sharing personal information."
         )
     elif final_score <= 50:
-        level = "MEDIUM"
-        result = "SUSPICIOUS"
+        level, result = "MEDIUM", "SUSPICIOUS"
         recommendation = (
-            "Some suspicious indicators were detected. Verify the sender before clicking "
-            "links, making payments, or sharing personal information."
+            "Some suspicious indicators were detected. Verify the sender before "
+            "clicking links, making payments, or sharing personal information."
         )
     elif final_score <= 75:
-        level = "HIGH"
-        result = "HIGH RISK"
+        level, result = "HIGH", "HIGH RISK"
         recommendation = (
-            "Strong scam indicators are present. Avoid clicking links, sharing sensitive "
-            "information, or making payments."
+            "Strong scam indicators are present. Avoid clicking links, sharing "
+            "sensitive information, or making payments."
         )
     else:
-        level = "CRITICAL"
-        result = "LIKELY SCAM"
+        level, result = "CRITICAL", "LIKELY SCAM"
         recommendation = (
-            "Multiple serious scam indicators are present. Stop interaction immediately "
-            "and verify the source through an official channel."
+            "Multiple serious scam indicators are present. Stop interaction "
+            "immediately and verify the source through an official channel."
         )
 
     if not reasons:
         reasons = ["No major scam indicators detected"]
+
+    try:
+        ml_probability = round(
+            float(ml_result.get("probability", 0) or 0) * 100, 2
+        )
+    except (TypeError, ValueError):
+        ml_probability = 0
 
     return {
         "result": result,
@@ -785,8 +516,8 @@ def analyze_text(text):
         "database_message": database_message,
         "ml_algorithm": "Random Forest",
         "ml_prediction": ml_label,
-        "ml_probability": round(float(ml_result.get("probability", 0)) * 100, 2),
-        "ml_model_available": bool(ml_result.get("available")),
+        "ml_probability": ml_probability,
+        "ml_model_available": bool(ml_result.get("available"))
     }
 
 
@@ -795,7 +526,6 @@ def analyze_text(text):
 # =========================================================
 
 def analyze_url(url):
-
     url = (url or "").strip()
     lower = url.lower()
     reasons = []
@@ -812,24 +542,24 @@ def analyze_url(url):
             "ml_algorithm": "Random Forest",
             "ml_prediction": "UNKNOWN",
             "ml_probability": 0,
-            "ml_model_available": False,
+            "ml_model_available": False
         }
 
-    # -----------------------------------------------------
-    # 1. RANDOM FOREST URL PREDICTION
-    # -----------------------------------------------------
-    ml_result = predict_url(url)
-    ml_score = int(ml_result.get("score", 0))
+    try:
+        ml_result = predict_url(url) or {}
+    except Exception as error:
+        print("URL ML prediction failed:", error)
+        ml_result = {}
+
+    ml_score = int(ml_result.get("score", 0) or 0)
     ml_label = ml_result.get("label", "UNKNOWN")
 
     if ml_result.get("available"):
         reasons.append(
-            f"Random Forest classified the URL as {ml_label} ({ml_score}% scam probability)"
+            f"Random Forest classified the URL as {ml_label} "
+            f"({ml_score}% scam probability)"
         )
 
-    # -----------------------------------------------------
-    # 2. SUPPORTING URL RULES
-    # -----------------------------------------------------
     if not re.match(r"^https?://", lower):
         reasons.append("URL does not start with HTTP/HTTPS")
 
@@ -837,10 +567,11 @@ def analyze_url(url):
         reasons.append("Website is not using HTTPS")
 
     suspicious_words = [
-        "login", "verify", "verification", "account", "secure", "update",
-        "bank", "payment", "reward", "prize", "confirm", "free", "wallet",
-        "signin", "password", "kyc"
+        "login", "verify", "verification", "account", "secure",
+        "update", "bank", "payment", "reward", "prize", "confirm",
+        "free", "wallet", "signin", "password", "kyc"
     ]
+
     matched = [word for word in suspicious_words if word in lower]
     if matched:
         reasons.append("Suspicious keywords found in URL")
@@ -866,7 +597,6 @@ def analyze_url(url):
 
     rule_score = min(len(reasons) * 10 + len(matched) * 4, 100)
 
-    # Random Forest is the primary signal.
     if ml_result.get("available"):
         score = int(round(ml_score * 0.75 + rule_score * 0.25))
     else:
@@ -875,24 +605,39 @@ def analyze_url(url):
     score = min(max(score, 0), 100)
 
     if score <= 25:
-        level = "LOW"
-        result = "SAFE"
-        recommendation = "No major URL indicators were detected. Verify the domain before entering sensitive information."
+        level, result = "LOW", "SAFE"
+        recommendation = (
+            "No major URL indicators were detected. Verify the domain before "
+            "entering sensitive information."
+        )
     elif score <= 50:
-        level = "MEDIUM"
-        result = "SUSPICIOUS"
-        recommendation = "Check the domain carefully and avoid entering personal or financial information until verified."
+        level, result = "MEDIUM", "SUSPICIOUS"
+        recommendation = (
+            "Check the domain carefully and avoid entering personal or financial "
+            "information until verified."
+        )
     elif score <= 75:
-        level = "HIGH"
-        result = "HIGH RISK"
-        recommendation = "Avoid interacting with this URL until its authenticity is independently verified."
+        level, result = "HIGH", "HIGH RISK"
+        recommendation = (
+            "Avoid interacting with this URL until its authenticity is "
+            "independently verified."
+        )
     else:
-        level = "CRITICAL"
-        result = "LIKELY SCAM"
-        recommendation = "Avoid opening the URL and do not provide passwords, OTPs, payment details, or personal information."
+        level, result = "CRITICAL", "LIKELY SCAM"
+        recommendation = (
+            "Avoid opening the URL and do not provide passwords, OTPs, payment "
+            "details, or personal information."
+        )
 
     if not reasons:
         reasons = ["No major URL indicators detected"]
+
+    try:
+        ml_probability = round(
+            float(ml_result.get("probability", 0) or 0) * 100, 2
+        )
+    except (TypeError, ValueError):
+        ml_probability = 0
 
     return {
         "result": result,
@@ -903,162 +648,89 @@ def analyze_url(url):
         "recommendation": recommendation,
         "ml_algorithm": "Random Forest",
         "ml_prediction": ml_label,
-        "ml_probability": round(float(ml_result.get("probability", 0)) * 100, 2),
-        "ml_model_available": bool(ml_result.get("available")),
+        "ml_probability": ml_probability,
+        "ml_model_available": bool(ml_result.get("available"))
     }
 
-
 # =========================================================
-# MESSAGE API
+# MESSAGE SCAN API
 # =========================================================
 
-@app.route(
-    "/api/check-text",
-    methods=["POST"]
-)
+@app.route("/api/check-text", methods=["POST"])
 def api_check_text():
+    data = request.get_json(silent=True) or {}
+    text_value = (data.get("text") or "").strip()
 
-    data = request.get_json(
-        silent=True
-    ) or {}
-
-    text = (
-        data.get("text")
-        or ""
-    ).strip()
-
-    if not text:
-
+    if not text_value:
         return jsonify({
-
             "success": False,
-
-            "error":
-                "Please enter a message."
-
+            "error": "Please enter a message."
         }), 400
 
     try:
-
-        result = analyze_text(
-            text
-        )
-
-        saved = save_scan_history(
-            text,
-            result
-        )
+        result = analyze_text(text_value)
+        saved = save_scan_history(text_value, result)
 
         if not saved:
-
             return jsonify({
-
                 "success": False,
-
-                "error":
-                    "The message was analyzed, "
-                    "but it could not be saved "
-                    "to the MySQL database."
-
+                "error": (
+                    "The message was analyzed, but it could not be saved "
+                    "to the MySQL database. Check Render logs."
+                )
             }), 500
 
         return jsonify({
-
             "success": True,
-
             "data": result
         })
 
     except Exception as error:
-
-        print(
-            "MESSAGE API ERROR:",
-            error
-        )
-
+        print("MESSAGE API ERROR:", error)
         return jsonify({
-
             "success": False,
-
-            "error": str(error)
-
+            "error": "Message analysis failed. Check Render logs."
         }), 500
 
 
 # =========================================================
-# URL API
+# URL SCAN API
 # =========================================================
 
-@app.route(
-    "/api/check-url",
-    methods=["POST"]
-)
+@app.route("/api/check-url", methods=["POST"])
 def api_check_url():
+    data = request.get_json(silent=True) or {}
+    url_value = (data.get("url") or "").strip()
 
-    data = request.get_json(
-        silent=True
-    ) or {}
-
-    url = (
-        data.get("url")
-        or ""
-    ).strip()
-
-    if not url:
-
+    if not url_value:
         return jsonify({
-
             "success": False,
-
-            "error":
-                "Please enter a URL."
-
+            "error": "Please enter a URL."
         }), 400
 
     try:
-
-        result = analyze_url(
-            url
-        )
-
-        saved = save_scan_history(
-            url,
-            result
-        )
+        result = analyze_url(url_value)
+        saved = save_scan_history(url_value, result)
 
         if not saved:
-
             return jsonify({
-
                 "success": False,
-
-                "error":
-                    "The URL was analyzed, "
-                    "but it could not be saved "
-                    "to the MySQL database."
-
+                "error": (
+                    "The URL was analyzed, but it could not be saved "
+                    "to the MySQL database. Check Render logs."
+                )
             }), 500
 
         return jsonify({
-
             "success": True,
-
             "data": result
         })
 
     except Exception as error:
-
-        print(
-            "URL API ERROR:",
-            error
-        )
-
+        print("URL API ERROR:", error)
         return jsonify({
-
             "success": False,
-
-            "error": str(error)
-
+            "error": "URL analysis failed. Check Render logs."
         }), 500
 
 
@@ -1068,117 +740,64 @@ def api_check_url():
 
 @app.route("/db-status")
 def db_status():
-
     db = None
     cursor = None
 
     try:
-
         db = get_mysql_connection()
-
         cursor = db.cursor()
 
-        cursor.execute("""
-            SELECT COUNT(*)
-            FROM scam_messages
-        """)
+        cursor.execute("SELECT COUNT(*) FROM scam_messages")
+        message_count = cursor.fetchone()[0]
 
-        message_count = (
-            cursor.fetchone()[0]
-        )
-
-        cursor.execute("""
-            SELECT COUNT(*)
-            FROM scan_history
-        """)
-
-        scan_count = (
-            cursor.fetchone()[0]
-        )
+        cursor.execute("SELECT COUNT(*) FROM scan_history")
+        scan_count = cursor.fetchone()[0]
 
         return jsonify({
-
             "success": True,
-
-            "database":
-                "MySQL / scamguard",
-
-            "scam_messages":
-                message_count,
-
-            "scan_history":
-                scan_count
+            "database": "Aiven MySQL",
+            "scam_messages": message_count,
+            "scan_history": scan_count
         })
 
     except Exception as error:
-
+        print("Database status error:", error)
         return jsonify({
-
             "success": False,
-
             "error": str(error)
-
         }), 500
 
     finally:
-
-        if cursor is not None:
+        if cursor:
             cursor.close()
-
-        if db is not None:
+        if db:
             db.close()
 
 
 # =========================================================
-# APPLICATION START
+# CREATE TABLES WHEN RENDER/GUNICORN STARTS
+# =========================================================
+
+if test_database_connection():
+    print("Aiven MySQL connected successfully.")
+    setup_database()
+else:
+    print(
+        "Aiven MySQL connection failed. "
+        "Check DB_HOST, DB_PORT, DB_NAME, DB_USER and DB_PASSWORD."
+    )
+
+
+# =========================================================
+# LOCAL DEVELOPMENT
+# Render uses: gunicorn app:app
 # =========================================================
 
 if __name__ == "__main__":
-
-    print(
-        "============================================"
-    )
-
-    print(
-        "       ScamGuard - MySQL Database"
-    )
-
-    print(
-        "============================================"
-    )
-
-    print(
-        "Server: http://127.0.0.1:5000"
-    )
-
-    print(
-        "Database: MySQL / scamguard"
-    )
-
-    if test_database_connection():
-
-        print(
-            "MySQL Status: CONNECTED"
-        )
-
-        setup_database()
-
-    else:
-
-        print(
-            "MySQL Status: CONNECTION FAILED"
-        )
-
-        print(
-            "Check your MySQL username/password."
-        )
-
-    print(
-        "============================================"
-    )
+    print("ScamGuard starting...")
 
     app.run(
-        debug=True,
-        host="127.0.0.1",
-        port=5000
+        debug=False,
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", "5000"))
     )
